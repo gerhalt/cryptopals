@@ -7,7 +7,7 @@ if __name__ == '__main__':
     print('Challenge #4 - Detect Single Character XOR')
 
     best_guess = None
-    with open('data/1.4.txt', 'rb') as f:
+    with open('data/1_4.txt', 'rb') as f:
         for line in f:
             line = line.strip()
             current_guess = byte_xor_guesser(line)

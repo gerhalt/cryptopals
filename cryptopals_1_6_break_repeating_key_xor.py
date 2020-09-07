@@ -31,7 +31,7 @@ if __name__ == '__main__':
     b = b'wokka wokka!!!'
     assert(hamming_distance(a, b) == 37)
 
-    with open('data/1.6.txt', 'rb') as f:
+    with open('data/1_6.txt', 'rb') as f:
         # Encoded in B64 initially
         text = base64.b64decode(f.read())
 

@@ -9,7 +9,7 @@ if __name__ == '__main__':
     print('Challenge #7 - AES in ECB Mode')
 
     key = b'YELLOW SUBMARINE'
-    with open('data/1.7.txt', 'rb') as f:
+    with open('data/1_7.txt', 'rb') as f:
         text = base64.b64decode(f.read())
 
         cipher = AES.new(key, AES.MODE_ECB)  # IV is ignored
