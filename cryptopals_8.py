@@ -1,30 +1,32 @@
 #!/usr/bin/env python
 
-
 from collections import defaultdict
+
+
+def detect_duplicate_blocks(msg: bytes, block_size: int = 16) -> int:
+    """
+    Given a message and a block size, returns a dictionary of
+    `block`->`count` key-value pairs for any blocks found more than once.
+    """
+    counts = defaultdict(int)
+    for i in range(0, len(msg), block_size):
+        chunk = msg[i:i + block_size]
+        counts[chunk] += 1
+
+    return {block: score for block, score in counts.items() if score > 1}
 
 
 if __name__ == '__main__':
     print('Challenge #8 - Detect line encrypted with ECB')
 
+    chunks = []
     with open('data/8.txt', 'r') as f:
         for line in f:
             line = line.strip()
-            line = bytes.fromhex(line)
+            chunks.append(bytes.fromhex(line))
 
-            # Break into 16 byte chunks, record each time we see the same block
-            # Because the same plaintext 16 byte block will output the same
-            # encrypted block, we look for duplicate byte blocks for this basic
-            # puzzle. Convenient.
-            counts = defaultdict(int)
-            for i in range(0, len(line), 16):
-                chunk = line[i:i + 16]
-                counts[chunk] += 1
+    msg = b''.join(chunks)
 
-            # Look for any line with duplicate blocks
-            score = sum([c for c in counts.values() if c > 1])
-            if score > 0:
-                print(line)
-                for block, count in counts.items():
-                    if count > 1:
-                        print(f'    {count} identical blocks: {block}')
+    duplicate_blocks = detect_duplicate_blocks(msg)
+    for block, count in duplicate_blocks.items():
+        print(f'    {count} identical blocks: {block}')
