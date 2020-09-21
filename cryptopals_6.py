@@ -2,7 +2,8 @@
 
 import base64
 
-from helpers import byte_xor_guesser, repeating_key_xor
+from cryptopals_3 import byte_xor_guesser
+from cryptopals_5 import repeating_key_xor
 
 
 def hamming_distance(a: str, b: str) -> int:
@@ -31,7 +32,7 @@ if __name__ == '__main__':
     b = b'wokka wokka!!!'
     assert(hamming_distance(a, b) == 37)
 
-    with open('data/1_6.txt', 'rb') as f:
+    with open('data/6.txt', 'rb') as f:
         # Encoded in B64 initially
         text = base64.b64decode(f.read())
 
