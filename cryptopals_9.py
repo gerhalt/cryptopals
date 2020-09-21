@@ -1,12 +1,13 @@
 #!/usr/bin/env python
 
 
-def pkcs7_pad(msg: bytes, block_size: int) -> bytes:
+def pkcs7_pad(msg: bytes, block_size: int = 16) -> bytes:
     """
-    Pads the input message to the `block_size` by appending bytes to the end of
-    the block, creating a message length that is a multiple of the block size.
-    If the message length is already a multiple of `block_size`, appends a full
-    block of padding. `block_size` must be less than 256.
+    Pads the input message to the `block_size` bytes by appending bytes to the
+    end of the block, creating a message length that is a multiple of the block
+    size. If the message length is already a multiple of `block_size`, appends
+    a full block of padding. `block_size` must be less than 256, defaulting to
+    16.
     """
     assert block_size < 256
     
