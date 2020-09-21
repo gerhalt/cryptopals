@@ -7,7 +7,7 @@ from collections import defaultdict
 if __name__ == '__main__':
     print('Challenge #8 - Detect line encrypted with ECB')
 
-    with open('data/1_8.txt', 'r') as f:
+    with open('data/8.txt', 'r') as f:
         for line in f:
             line = line.strip()
             line = bytes.fromhex(line)
