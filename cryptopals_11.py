@@ -10,11 +10,14 @@ from cryptopals_9 import pkcs7_pad
 from cryptopals_10 import cbc_encrypt
 
 
+BLOCK_SIZE = 16
+
+
 def generate_aes_key() -> bytes:
     """
     Generates a random AES key.
     """
-    return os.urandom(16)
+    return os.urandom(BLOCK_SIZE)
 
 
 def randcryptor(msg: bytes) -> bytes:
@@ -23,7 +26,7 @@ def randcryptor(msg: bytes) -> bytes:
     """
     # Pad the message with 5-10 random bytes
     padding = os.urandom(randint(5, 10))
-    padded_msg = pkcs7_pad(padding + msg + padding, 16)
+    padded_msg = pkcs7_pad(padding + msg + padding, BLOCK_SIZE)
 
     # Generate a random key
     key = generate_aes_key()
@@ -31,7 +34,7 @@ def randcryptor(msg: bytes) -> bytes:
     # Randomly choose whether to use ECB or CBC
     mode = 'cbc' if bool(randint(0, 1)) else 'ecb'
     if mode == 'cbc':
-        iv = os.urandom(16)
+        iv = os.urandom(BLOCK_SIZE)
         encrypted_msg = cbc_encrypt(padded_msg, key, iv)
     else:  # ECB
         cipher = AES.new(key, AES.MODE_ECB)
@@ -40,18 +43,25 @@ def randcryptor(msg: bytes) -> bytes:
     return encrypted_msg, mode  # FOR TESTING ONLY
 
 
-if __name__ == '__main__':
-    print('Challenge #11 - ECB / CBC Detection Oracle')
-
-    msg = b'josh' * 1000
-    encrypted_msg, encryption_mode = randcryptor(msg)
-
+def aes_oracle(encrypted_msg: bytes) -> str:
+    """
+    Guesses whether a message was encrypted in ECB or CBC mode, depending on
+    whether any duplicate blocks were found.
+    """
     duplicates = detect_duplicate_blocks(encrypted_msg)
     dup_count = sum([c for c in duplicates.values()])
 
-    # Base our guess on the ratio of duplicates to total block count
-    ratio = dup_count / (len(encrypted_msg) // 16)
-    guess_mode = 'cbc' if ratio <= 0.01 else 'ecb'
+    return 'ecb' if dup_count > 0 else 'cbc'
+
+
+if __name__ == '__main__':
+    print('Challenge #11 - ECB / CBC Detection Oracle')
+
+    # Ensure our message has two identical blocks
+    msg = b'j' * (BLOCK_SIZE * 3)
+    encrypted_msg, encryption_mode = randcryptor(msg)
+
+    guess_mode = aes_oracle(encrypted_msg)
 
     print(f'Encrypted in {encryption_mode}, guess is {guess_mode}')
     assert guess_mode == encryption_mode 
