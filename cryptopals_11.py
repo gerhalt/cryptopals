@@ -49,7 +49,7 @@ def aes_oracle(encrypted_msg: bytes) -> str:
     whether any duplicate blocks were found.
     """
     duplicates = detect_duplicate_blocks(encrypted_msg)
-    dup_count = sum([c for c in duplicates.values()])
+    dup_count = sum([len(c) for c in duplicates.values()])
 
     return 'ecb' if dup_count > 0 else 'cbc'
 

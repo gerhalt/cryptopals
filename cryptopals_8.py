@@ -6,14 +6,15 @@ from collections import defaultdict
 def detect_duplicate_blocks(msg: bytes, block_size: int = 16) -> int:
     """
     Given a message and a block size, returns a dictionary of
-    `block`->`count` key-value pairs for any blocks found more than once.
+    `block`-> [`idx`, `idx`] key-value pairs for any blocks found more than
+    once.
     """
-    counts = defaultdict(int)
+    chunk_indexes = defaultdict(list)
     for i in range(0, len(msg), block_size):
         chunk = msg[i:i + block_size]
-        counts[chunk] += 1
+        chunk_indexes[chunk].append(i)
 
-    return {block: score for block, score in counts.items() if score > 1}
+    return {block: idxs for block, idxs in chunk_indexes.items() if len(idxs) > 1}
 
 
 if __name__ == '__main__':
@@ -28,5 +29,5 @@ if __name__ == '__main__':
     msg = b''.join(chunks)
 
     duplicate_blocks = detect_duplicate_blocks(msg)
-    for block, count in duplicate_blocks.items():
-        print(f'    {count} identical blocks: {block}')
+    for block, idxs in duplicate_blocks.items():
+        print(f'    {len(idxs)} identical blocks: {block}')
