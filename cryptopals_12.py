@@ -19,9 +19,9 @@ MYSTERY_PADDING = (
 KEY = os.urandom(16)
 
 
-def randcryptor(msg: bytes) -> bytes:
+def aes_encrypt(msg: bytes) -> bytes:
     """
-    Encrypts the input with AES in either ECB or CBC, randomly.
+    Encrypts the input with AES, adding mystery padding! Spooky!
     """
     padding = b64decode(MYSTERY_PADDING)
     padded_msg = pkcs7_pad(msg + padding, 16)
@@ -41,7 +41,7 @@ if __name__ == '__main__':
     block_size = None
     for i in range(0, 256):
         msg = b'A' * i
-        out = randcryptor(msg)
+        out = aes_encrypt(msg)
 
         if not last_len:
             last_len = len(out)
@@ -52,11 +52,11 @@ if __name__ == '__main__':
     print(f'Block size is {block_size}')
 
     # Detect the mode (known to be ECB, do anyway)
-    out = randcryptor(b'j' * (block_size * 3))
+    out = aes_encrypt(b'j' * (block_size * 3))
     guess_mode = aes_oracle(out)
     print(f'Mode is {guess_mode}')
 
-    block_count = len(randcryptor(b'')) // block_size
+    block_count = len(aes_encrypt(b'')) // block_size
     print(f'Resolving {block_count} blocks')
 
     known_bytes = []
@@ -76,11 +76,11 @@ if __name__ == '__main__':
             # + known bytes
             # + possible byte value
             msg = filler + b''.join(known_bytes) + possible_value.to_bytes(1, byteorder='little')
-            encrypted_block = randcryptor(msg)[block_start:block_end]
+            encrypted_block = aes_encrypt(msg)[block_start:block_end]
             known[encrypted_block] = msg
         
         # Now test with the filler, without the known bytes
-        test_block = randcryptor(filler)[block_start:block_end]
+        test_block = aes_encrypt(filler)[block_start:block_end]
 
         try:
             known_bytes.append(known[test_block][-1:])
