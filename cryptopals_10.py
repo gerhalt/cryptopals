@@ -64,10 +64,7 @@ def cbc_decrypt(msg: bytes, key: bytes, iv: bytes = None) -> bytes:
 
         previous_block = block
 
-    msg = b''.join(output)
-
-    # Strip off the PKCS7 padding before returning
-    return pkcs7_strip(msg)
+    return b''.join(output)
 
 
 if __name__ == '__main__':

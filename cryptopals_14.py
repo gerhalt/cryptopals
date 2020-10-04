@@ -80,8 +80,8 @@ if __name__ == '__main__':
         block_idx = len(known_bytes) // block_size
 
         filler = b'_' * ((block_idx + 1) * block_size - len(known_bytes) - 1)
-        print(f'Know {len(known_bytes)}, next block boundary is {(block_idx + 1) * block_size}')
-        print(f'    need {len(filler)} bytes of filler ({filler})')
+        #print(f'Know {len(known_bytes)}, next block boundary is {(block_idx + 1) * block_size}')
+        #print(f'    need {len(filler)} bytes of filler ({filler})')
 
         known = {}
         # Build possible value lookup dictionary
@@ -106,7 +106,6 @@ if __name__ == '__main__':
         except KeyError:
             # Second byte of dynamic padding will trigger, strip off the first
             # byte for cleanliness
-            print('UNKNOWN KEY')
             known_bytes = known_bytes[:-1]
             break
 
