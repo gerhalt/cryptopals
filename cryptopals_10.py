@@ -5,6 +5,7 @@ from base64 import b64decode
 from Crypto.Cipher import AES
 
 from cryptopals_9 import pkcs7_pad 
+from cryptopals_15 import pkcs7_strip
 
 
 BLOCK_SIZE = 16  # bytes
@@ -63,7 +64,10 @@ def cbc_decrypt(msg: bytes, key: bytes, iv: bytes = None) -> bytes:
 
         previous_block = block
 
-    return b''.join(output)
+    msg = b''.join(output)
+
+    # Strip off the PKCS7 padding before returning
+    return pkcs7_strip(msg)
 
 
 if __name__ == '__main__':

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 
-def is_pkcs7(msg: bytes) -> bytes:
+def pkcs7_strip(msg: bytes) -> bytes:
     """
     Given an input `msg`, returns the string stripped of all padding if it was
     padding correctly. If not, throws a `ValueError`.
@@ -14,14 +14,17 @@ def is_pkcs7(msg: bytes) -> bytes:
         raise ValueError(f'Padding value must not exceed block size ({padding_count})')
 
     #print(f'Should be {padding_count} elements, each set to {padding_count}')
-    return all(map(lambda x: x == padding_count, msg[-padding_count:]))
+    if not all(map(lambda x: x == padding_count, msg[-padding_count:])):
+        raise ValueError(f'Last {padding_count} bytes not all set to {padding_count}')
+
+    return msg[:-padding_count]
 
 if __name__ == '__main__':
     print('Challenge #15 - PKCS#7 Padding Validation')
 
     try:
         # Failure, message length isn't multiple of 16
-        is_pkcs7(b'jo' + b'\xFA' * 12)
+        pkcs7_strip(b'jo' + b'\xFA' * 12)
         raise Exception("Failure")
     except ValueError:
         pass
@@ -29,11 +32,14 @@ if __name__ == '__main__':
     try:
         # Failure, padding count indicates 250 bytes of padding but it can't
         # exceed 16
-        assert is_pkcs7(b'jo' + b'\xFA' * 12)
+        assert pkcs7_strip(b'jo' + b'\xFA' * 12)
         raise Exception("Failure")
     except ValueError:
         pass
 
-    # Pass, message is 16 bytes, padding indicates 12 bytes with all 12 bytes
+    # Message is 16 bytes, padding indicates 12 bytes with all 12 bytes
     # set to 12
-    assert is_pkcs7(b'josh' + b'\x0C' * 12)
+    assert pkcs7_strip(b'josh' + b'\x0C' * 12) == b'josh'
+
+    # Message is 32 bytes, last block entirely padding
+    assert pkcs7_strip(b'j' * 16 + b'\x10' * 16) == b'j' * 16
