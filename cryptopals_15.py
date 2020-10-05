@@ -3,21 +3,22 @@
 
 def pkcs7_strip(msg: bytes) -> bytes:
     """
-    Given an input `msg`, returns the string stripped of all padding if it was
-    padding correctly. If not, throws a `ValueError`.
+    Given an input `msg`, assumed to be padded. returns the string stripped of
+    all padding if it was padding correctly. If not, throws a `ValueError`.
     """
     if len(msg) % 16:
         raise ValueError(f'Message is not not a multiple of 16 bytes ({len(msg)})')
 
     padding_count = msg[-1]
-    if padding_count > 16:
-        raise ValueError(f'Padding value must not exceed block size ({padding_count})')
+    if not 0 < padding_count <= 16:
+        raise ValueError(f'Padding value must be > 0 and <= 16')
 
     #print(f'Should be {padding_count} elements, each set to {padding_count}')
     if not all(map(lambda x: x == padding_count, msg[-padding_count:])):
         raise ValueError(f'Last {padding_count} bytes not all set to {padding_count}')
 
     return msg[:-padding_count]
+
 
 if __name__ == '__main__':
     print('Challenge #15 - PKCS#7 Padding Validation')
