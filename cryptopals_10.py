@@ -13,9 +13,9 @@ BLOCK_SIZE = 16  # bytes
 
 def xor(a: bytes, b: bytes) -> bytes:
     """
-    Given two byte arrays of equal length, returns their XOR'ed output.
+    Returns the XOR'ed output of two byte arrays. If they are not the same
+    length, result will be the length of the shorter of the two.
     """
-    assert len(a) == len(b)
     return bytes([i ^ j for i, j in zip(a, b)])
 
 
