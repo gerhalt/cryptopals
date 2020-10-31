@@ -157,12 +157,10 @@ if __name__ == '__main__':
     print('Challenge #17 - The CBC Padding Oracle')
 
     # Run this 100 times, due to random chance
-    for i in range(0, 10000):
+    runs = 1000 
+    for i in range(1, runs + 1):
         global KEY
         KEY = os.urandom(16)
-
-        sys.stdout.write('.')
-        sys.stdout.flush()
 
         ciphertext, iv = randcrypt()
         plaintext = padding_oracle_attack(ciphertext, iv, has_valid_padding)
@@ -172,3 +170,6 @@ if __name__ == '__main__':
 
         # Verify output plaintext against our initial set
         assert plaintext in POSSIBLE_INPUTS
+
+        sys.stdout.write(f'\r{i} / {runs} ({i / runs * 100:.0f}%)')
+        sys.stdout.flush()
