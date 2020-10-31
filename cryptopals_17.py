@@ -3,8 +3,9 @@
 
 import os
 import sys
+from base64 import b64encode, b64decode
 from collections import deque
-from random import choice
+from random import choice, randint
 from typing import Callable, Tuple
 
 from cryptopals_15 import pkcs7_strip
@@ -12,10 +13,9 @@ from cryptopals_10 import cbc_decrypt, cbc_encrypt
 
 
 BLOCK_SIZE = 16
-KEY = os.urandom(16)
 
 
-POSSIBLE_INPUTS = (
+POSSIBLE_INPUTS = [b64decode(s) for s in (
     b'MDAwMDAwTm93IHRoYXQgdGhlIHBhcnR5IGlzIGp1bXBpbmc=',
     b'MDAwMDAxV2l0aCB0aGUgYmFzcyBraWNrZWQgaW4gYW5kIHRoZSBWZWdhJ3MgYXJlIHB1bXBpbic=',
     b'MDAwMDAyUXVpY2sgdG8gdGhlIHBvaW50LCB0byB0aGUgcG9pbnQsIG5vIGZha2luZw==',
@@ -26,10 +26,19 @@ POSSIBLE_INPUTS = (
     b'MDAwMDA3SSdtIG9uIGEgcm9sbCwgaXQncyB0aW1lIHRvIGdvIHNvbG8=',
     b'MDAwMDA4b2xsaW4nIGluIG15IGZpdmUgcG9pbnQgb2g=',
     b'MDAwMDA5aXRoIG15IHJhZy10b3AgZG93biBzbyBteSBoYWlyIGNhbiBibG93',
-)
+
+    # Plus a specially-formulated edge case to demonstrate the issue with a
+    # series of valid padding bytes at the end of the block: the first block
+    # has random garbage, followed by 0x06 five times, and then a garbage
+    # character. If we're solving the last byte, and we corrupt a byte in the
+    # previous block, resulting in an output byte of 0x06 in this block, the
+    # padding oracle will return value padding, but we might naively assume
+    # we've found the 0x01 case, which would be incorrect.
+    b64encode(b'x' * 10 + b'\x06' * 5 + b'?' + b'j' * BLOCK_SIZE * 2)
+)]
 
 
-def randcrypt() -> Tuple[bytes, bytes]:
+def randcrypt():
     """
     Selects one of the strings above, at random, encrypts it using our random
     global key, and returns the ciphertext and iv.
@@ -87,46 +96,52 @@ def padding_oracle_attack(ciphertext: bytes, iv: bytes,
             base_block = iv[:] if block_idx == 0 else ciphertext[hacked_start:hacked_end]
             for v in range(0, 256):
 
-                # When determining the last byte of a block, there's an edge
-                # case where, if our test value is the same as the original
-                # ciphertext byte, the padding oracle will indicate it is valid
-                # if we happen to be on the last block
+                # EDGE CASE: When determining the last byte of a block, there's
+                #     an edge case where, if our test value is the same as the
+                #     original ciphertext byte, the padding oracle will
+                #     indicate it is valid if we happen to be on the last byte
                 if target_idx == 15 and v == base_block[target_idx]:
                     continue
 
-                # Convert to a list for easy concatenation
-                block = list(base_block)
-
                 # xor already-discovered elements with the desired padding
                 # value
+                block = list(base_block)
                 block = block[:target_idx] + [v] + [desired_pad ^ k for k in discovered]
                 block = bytes(block)
 
-                # Run the IV and all blocks up through the next block through
-                # the oracle
+                # Set the IV to the hacked prior block, and the ciphertext to
+                # the current block we've solving
+                hacked_iv = block
+                hacked_ciphertext = ciphertext[block_start:block_end]
 
-                # If the first block, modify the IV, else modify the ciphertext
-                if block_idx == 0:
-                    hacked_iv = block
-                    hacked_ciphertext = ciphertext[:block_end]
-                else:
-                    hacked_iv = iv
-                    hacked_ciphertext = list(ciphertext[:block_end])
-                    hacked_ciphertext[hacked_start:hacked_end] = block
-                    hacked_ciphertext = bytes(hacked_ciphertext)
+                if has_valid_padding(hacked_ciphertext, hacked_iv):
+                    # EDGE CASE: If we're on the last byte of the block, we
+                    #     need to corrupt the second-to-last byte and re-check,
+                    #     to avoid the case where there are X-1 padding bytes
+                    #     with the correct value immediately preceeding the
+                    #     last byte.
+                    if target_idx == BLOCK_SIZE - 1:
 
-                valid = has_valid_padding(hacked_ciphertext, hacked_iv)
-                if valid:
-                    # print(f'Valid byte ({v}) {bin(v)} at target_idx {target_idx} found')
+                        # Corrupt the second to last byte to something different
+                        new_value = original_value = hacked_iv[target_idx - 1]
+                        while new_value == original_value: 
+                            new_value = randint(0x00, 0xFF) 
+
+                        # Small transformation so we can easily do a quick item
+                        # assignment, then back again
+                        hacked_iv = list(hacked_iv)
+                        hacked_iv[target_idx - 1] = new_value
+                        hacked_iv = bytes(hacked_iv)
+
+                        if not has_valid_padding(hacked_ciphertext, hacked_iv):
+                            # Keep looking, this was a false-positive that
+                            # happened to make prior padding bytes become valid
+                            continue
 
                     # xor with the padding value to get the pre-xor output
                     discovered.appendleft(v ^ desired_pad)
                     break
             else:
-                #print('Plaintext: ', b''.join(plaintext))
-                #print(f'Range in ciphertext: {hacked_start}, {hacked_end} | {block_start}, {block_end}')
-                #print(list(base_block))
-                #print(list(block))
                 raise Exception(f'Unable to determine byte at {block_idx}:{target_idx}')
 
         # Convert the discovered block to plaintext by XORing with the previous
@@ -142,7 +157,10 @@ if __name__ == '__main__':
     print('Challenge #17 - The CBC Padding Oracle')
 
     # Run this 100 times, due to random chance
-    for i in range(0, 100):
+    for i in range(0, 10000):
+        global KEY
+        KEY = os.urandom(16)
+
         sys.stdout.write('.')
         sys.stdout.flush()
 
