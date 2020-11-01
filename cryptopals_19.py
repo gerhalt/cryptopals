@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from base64 import b64decode
+from typing import List
 from os import urandom
 
 from cryptopals_3 import score_english
@@ -52,16 +53,11 @@ INPUTS = (b64decode(s) for s in (
 ))
 
 
-if __name__ == '__main__':
-    print('Challenge #19 - Break fixed-nonce CTR mode using substitutions')
-
-    nonce = 0
-    key = urandom(16)
-
-    ciphertexts = set()
-    for plaintext in INPUTS:
-        ciphertexts.add(aes_ctr(key, nonce, plaintext))
-
+def guess_aes_ctr_keystream(ciphertexts: List[bytes]) -> bytes:
+    """Given a list of ciphertexts, each encrypted against (a fresh series
+    from) the same keystream, returns our best guess at what the keystream
+    could be, assuming the plaintext is english.
+    """
     # Iterate through each byte index in our ciphertexts, looking for a
     # keystream byte that results in the most english-looking set of bytes in
     # that position
@@ -93,6 +89,21 @@ if __name__ == '__main__':
         guessed_keystream.append(best_byte)
 
         idx += 1
+
+    return guessed_keystream
+
+
+if __name__ == '__main__':
+    print('Challenge #19 - Break fixed-nonce CTR mode using substitutions')
+
+    nonce = 0
+    key = urandom(16)
+
+    ciphertexts = set()
+    for plaintext in INPUTS:
+        ciphertexts.add(aes_ctr(key, nonce, plaintext))
+
+    guessed_keystream = guess_aes_ctr_keystream(ciphertexts)
 
     print(f'Guessed Keystream: {bytes(guessed_keystream)}')
     for ct in ciphertexts:

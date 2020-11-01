@@ -4,8 +4,8 @@ from collections import defaultdict
 from typing import Tuple
 
 
-VOWELS = set('aeiouy')
-CONSONANTS = set('bcdfghjklmnpqrstvwxz') 
+VOWELS = set('aeiou')
+CONSONANTS = set('bcdfghjklmnpqrstvwxyz') 
 
 
 def score_english(inp: bytes) -> float:
@@ -23,18 +23,20 @@ def score_english(inp: bytes) -> float:
         count[chr(c)] += 1
 
     vowel_count = sum([count[c] for c in VOWELS])
-    consonant_count = sum([count[c] for c in CONSONANTS])
+    consonant_count = sum([count[c] for c in CONSONANTS]) or 1
     other_count = sum([v for k, v in count.items() if k not in VOWELS and k not in CONSONANTS])
-    if not consonant_count:
-        consonant_count = 1
 
     score = 0
+    
+    # Add a bonus score based on vowel to consonant ratio is greater than 80%
+    if (vowel_count + consonant_count) / len(inp) > 0.9:
+        score += 1 - abs(0.5 - vowel_count / consonant_count)
 
     # Heavily prefer spaces to non-alpha characters
     if other_count:
         score += 1 - abs(0.8 - (count[' '] / other_count))
     else:
-        score += 0.5
+        score += 1
 
     # Alphabetical characters should make up ~90% of the text
     score += 1 - abs(0.9 - (vowel_count + consonant_count) / len(inp))
