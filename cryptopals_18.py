@@ -26,22 +26,28 @@ def aes_keystream(key: bytes, nonce: int) -> bytes:
         counter += 1
 
 
+def aes_ctr(key: bytes, nonce: int, msg: bytes) -> bytes:
+    """Encrypts or decrypts a message using AES in CTR mode.
+    """
+    output = []
+
+    i = 0
+    for keystream in aes_keystream(KEY, NONCE):
+        block = msg[i:i+BLOCK_SIZE]
+
+        output.append(xor(block, keystream))
+
+        i += BLOCK_SIZE
+        if i >= len(msg):
+            break
+    
+    return b''.join(output)
+
+
 if __name__ == '__main__':
     print('Challenge #18 - Implement CTR, the stream cipher mode')
 
     ciphertext = b64decode(TEST_INPUT)
-    discovered = []
-
-    i = 0
-    for keystream in aes_keystream(KEY, NONCE):
-        block = ciphertext[i:i+BLOCK_SIZE]
-
-        discovered.append(xor(block, keystream))
-
-        i += BLOCK_SIZE
-        if i >= len(ciphertext):
-            break
-
-    plaintext = b''.join(discovered)
+    plaintext = aes_ctr(KEY, NONCE, ciphertext)
 
     assert plaintext == EXPECTED_OUTPUT

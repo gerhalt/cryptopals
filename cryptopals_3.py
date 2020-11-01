@@ -8,7 +8,7 @@ VOWELS = set('aeiouy')
 CONSONANTS = set('bcdfghjklmnpqrstvwxz') 
 
 
-def score_english(inp: str) -> float:
+def score_english(inp: bytes) -> float:
     """
     Accepts a string, and returns how likely it is to be valid english.
     """
@@ -18,6 +18,7 @@ def score_english(inp: str) -> float:
     consonant_count = 0
     other_count = 0
 
+    inp = inp.lower()
     for c in inp:
         count[chr(c)] += 1
 
@@ -30,7 +31,10 @@ def score_english(inp: str) -> float:
     score = 0
 
     # Heavily prefer spaces to non-alpha characters
-    score += 1 - abs(0.8 - (count[' '] / other_count))
+    if other_count:
+        score += 1 - abs(0.8 - (count[' '] / other_count))
+    else:
+        score += 0.5
 
     # Alphabetical characters should make up ~90% of the text
     score += 1 - abs(0.9 - (vowel_count + consonant_count) / len(inp))
