@@ -34,7 +34,8 @@ POSSIBLE_INPUTS = [b64decode(s) for s in (
     # previous block, resulting in an output byte of 0x06 in this block, the
     # padding oracle will return value padding, but we might naively assume
     # we've found the 0x01 case, which would be incorrect.
-    b64encode(b'x' * 10 + b'\x06' * 5 + b'?' + b'j' * BLOCK_SIZE * 2)
+    b64encode(b'x' * 10 + b'\x06' * 5 + b'?' + b'j' * BLOCK_SIZE * 2),
+    b64encode(b'x' * 15 + b'\x01' + b'j' * BLOCK_SIZE * 2)
 )]
 
 
@@ -95,13 +96,6 @@ def padding_oracle_attack(ciphertext: bytes, iv: bytes,
             # Reset the block base we're editing each time
             base_block = iv[:] if block_idx == 0 else ciphertext[hacked_start:hacked_end]
             for v in range(0, 256):
-
-                # EDGE CASE: When determining the last byte of a block, there's
-                #     an edge case where, if our test value is the same as the
-                #     original ciphertext byte, the padding oracle will
-                #     indicate it is valid if we happen to be on the last byte
-                if target_idx == 15 and v == base_block[target_idx]:
-                    continue
 
                 # xor already-discovered elements with the desired padding
                 # value
