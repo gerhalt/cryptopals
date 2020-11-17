@@ -76,7 +76,7 @@ def untemper(n: int) -> int:
 if __name__ == '__main__':
     print('Challenge #23 - Clone a MT19937 RNG from its output')
 
-    # Test our shift functions with values I've calculated by hand :)
+    # Test un-shift-and-xor
     for shift in range(0, 32):
         original_y = 0xDEADBEEF
         xor_and = 0xDECAFBAD
@@ -89,16 +89,22 @@ if __name__ == '__main__':
         shifted_y = original_y ^ ((original_y >> shift) & xor_and)
         assert unxor_rshift(shifted_y, shift, xor_and), original_y
 
+    # Given a series of known output, stopping right before the second twist
     mt = MT(1234)
     original_out = [mt.extract_number() for i in range(0, MT.N)]
 
-    spliced_mt = MT(999)  # Some other seed, to avoid accidential errors
+    # When we create a new instance (with a different seed from our known series)
+    spliced_mt = MT(999)
     spliced_mt.idx = 0
+
+    # and iterate through each element in the known output, untempter it, and
+    # stuff it into the state array of our new twister instance
     for i, o in enumerate(original_out):
         spliced_mt.mt[i] = untemper(o)
 
+    # we should be able to create a duplicate series of outputs
     predicted_out = [spliced_mt.extract_number() for i in range(0, MT.N)]
 
-    # Compare output up until we would need to twist
+    # and verify that it matches the original output
     for i, (a, b) in enumerate(zip(original_out, predicted_out)):
         assert a == b, f'Original output #{i} of {a} doesn\'t match predicted output {b}'
