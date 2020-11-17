@@ -30,7 +30,7 @@ class MersenneTwister(object):
         self.mt = [0] * self.N
         self.idx = self.N + 1
         self.LOWER_MASK = (1 << self.R) - 1  # Binary number of r 1's
-        self.UPPER_MASK = ((1 << self.W) - 1)
+        self.UPPER_MASK = (((1 << self.W) - 1) << self.R) & 0xFFFFFFFF
 
         self.seed(seed)
 
@@ -68,7 +68,7 @@ class MersenneTwister(object):
             if x % 2 != 0:  # Lowest bit of `x` is 1
                 x_a ^= self.A
 
-            self.mt[i] = self.mt[(i + self.M) % self.N]
+            self.mt[i] = self.mt[(i + self.M) % self.N] ^ x_a
 
         self.idx = 0
 
@@ -76,5 +76,12 @@ class MersenneTwister(object):
 if __name__ == '__main__':
     print('Challenge #21 - Implement the MT19937 Mersenne Twister RNG')
 
-    mt = MersenneTwister(12345)
-    print([mt.extract_number() for i in range(0, 10)])
+    # Check against known outputs
+    mt = MersenneTwister(0)
+    assert [mt.extract_number() for i in range(0, 4)] == [0x8c7f0aac, 0x97c4aa2f, 0xb716a675, 0xd821ccc0]
+
+    mt = MersenneTwister(12345678)
+    assert [mt.extract_number() for i in range(0, 4)] == [0x3eed06b3, 0xcbf868e2, 0x98af8b9f, 0x52097d84]
+
+    mt = MersenneTwister(0x12345678)
+    assert [mt.extract_number() for i in range(0, 4)] == [0xc6979343, 0x0962d2fa, 0xa73a24a4, 0xe118a180]
