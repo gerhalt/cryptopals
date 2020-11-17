@@ -115,7 +115,6 @@ def padding_oracle_attack(ciphertext: bytes, iv: bytes,
                     #     with the correct value immediately preceeding the
                     #     last byte.
                     if target_idx == BLOCK_SIZE - 1:
-
                         # Corrupt the second to last byte to something different
                         new_value = original_value = hacked_iv[target_idx - 1]
                         while new_value == original_value: 
