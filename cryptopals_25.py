@@ -42,7 +42,5 @@ if __name__ == '__main__':
     unknown_plaintext = ecb_decrypt(b'YELLOW SUBMARINE', 'data/25.txt')
     ciphertext = aes_ctr(key, NONCE, unknown_plaintext)
 
-    newtext = b'.' * len(ciphertext)
-    modified_ciphertext = edit_ctr(ciphertext, key, 0, newtext)
-
-    assert unknown_plaintext == xor(ciphertext, xor(newtext, modified_ciphertext))
+    plaintext = edit_ctr(ciphertext, key, 0, ciphertext)
+    assert unknown_plaintext == plaintext
