@@ -1,7 +1,5 @@
 #!/usr/bin/env python
 """
-(from description)
-
 You're relying on the fact that in CBC mode, a 1-bit error in a ciphertext block:
 
     Completely scrambles the block the error occurs in
@@ -33,11 +31,15 @@ PREFIX = b'comment1=cooking%20MCs;userdata='
 SUFFIX = b';comment2=%20like%20a%20pound%20of%20bacon'
 
 
-def encrypt(msg: bytes) -> bytes:
+def encrypt(msg: bytes, key: bytes = None, iv: bytes = None) -> bytes:
     """ Sandwiches user input between two existing strings, surrounding any ';'
     or '=' characters in single quotes. Pads and encrypts in AES CBC using the
     random key and a random IV, then returns the encrypted messge.
     """
+    # Fall back to module defaults for local tests
+    key = key or KEY
+    iv = iv or IV
+
     # I interpreted "quote out" to mean surround disallowed characters with
     # single quotes
     msg_str = msg.decode()
@@ -49,7 +51,7 @@ def encrypt(msg: bytes) -> bytes:
     # Tack on the prefix and suffix
     msg = PREFIX + msg + SUFFIX
 
-    return cbc_encrypt(msg, KEY, IV)
+    return cbc_encrypt(msg, key, iv)
 
 
 def is_admin(ciphertext: bytes) -> bytes:
