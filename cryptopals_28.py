@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from typing import Union
+from typing import Callable, Union
 
 from cryptopals_10 import xor
 
@@ -26,18 +26,20 @@ def leftrotate(n: Union[int, bytes], l: bytes) -> Union[int, bytes]:
     return n
 
 
-def sha1(msg: bytes) -> bytes:
+def sha1(msg: bytes) -> int:
     """ Implementation of the SHA-1 has function, taking an input and producing
     a 160-bit hash digest.
 
     Implemented from the psuedocode here:
     https://en.wikipedia.org/wiki/SHA-1#SHA-1_pseudocode
 
-    Note 1: All variables are unsigned 32-bit quantities and wrap modulo 232 when calculating, except for
-            ml, the message length, which is a 64-bit quantity, and
-            hh, the message digest, which is a 160-bit quantity.
+    Note 1: All variables are unsigned 32-bit quantities and wrap modulo 2^32
+            when calculating, except for ml, the message length, which is a
+            64-bit quantity, and hh, the message digest, which is a 160-bit
+            quantity.
     Note 2: All constants in this pseudo code are in big endian.
-            Within each word, the most significant byte is stored in the leftmost byte position
+            Within each word, the most significant byte is stored in the
+            leftmost byte position
     """
     h0 = 0x67452301
     h1 = 0xEFCDAB89
@@ -80,8 +82,6 @@ def sha1(msg: bytes) -> bytes:
             w = leftrotate(w, 1)
             words.append(w)
 
-        print(words)
-
         # Initialize hash values for this chunk
         a = h0
         b = h1
@@ -118,8 +118,34 @@ def sha1(msg: bytes) -> bytes:
         h3 += d
         h4 += e
 
+    # Mask, due to note #1 (above)
+    h0 &= 0xFFFFFFFF
+    h1 &= 0xFFFFFFFF
+    h2 &= 0xFFFFFFFF
+    h3 &= 0xFFFFFFFF
+    h4 &= 0xFFFFFFFF
+
     # Produce the final hash value as a 160-bit number
     return (h0 << 128) | (h1 << 96) | (h2 << 64) | (h3 << 32) | h4
+
+
+def secret_prefix_mac(hash_algo: Callable[[bytes], bytes], key: bytes, msg: bytes) -> bytes:
+    """Generates a secret-prefix MAC, which is the result of `hash_algo(key || msg)`.
+
+    Returns:
+        bytes: the secret-prefix MAC
+    """
+    return hash_algo(key + msg)
+
+
+def authenticate_secret_prefix_mac(key: bytes, msg: bytes, mac: bytes) -> bool:
+    """Generates a secret-prefix MAC from the passed key and message, and
+    compares it to the input MAC.
+    
+    Returns:
+        bool: Represents whether the generated MAC matches the one passed in.
+    """
+    return secret_prefix_mac(sha1, key, msg) == mac
 
 
 if __name__ == '__main__':
@@ -132,4 +158,11 @@ if __name__ == '__main__':
     assert leftrotate(n, 25) == 0xFE0001FF
 
     # Tests for SHA-1 hash
-    print(hex(sha1(b'')))
+    h = sha1(b"The quick brown fox jumps over the lazy dog")
+    assert h == 0x2fd4e1c67a2d28fced849ee1bb76e7391b93eb12
+
+    h = sha1(b"The quick brown fox jumps over the lazy cog")
+    assert h == 0xde9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3
+
+    h = sha1(b"")
+    assert h == 0xda39a3ee5e6b4b0d3255bfef95601890afd80709
