@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import os
 from typing import Callable, Union
 
 from cryptopals_10 import xor
@@ -166,3 +167,35 @@ if __name__ == '__main__':
 
     h = sha1(b"")
     assert h == 0xda39a3ee5e6b4b0d3255bfef95601890afd80709
+
+    # Basic verification that tampering with the message results in a
+    # completely different MAC
+    key = os.urandom(16)
+    original_msg = b"Some message"
+    original_mac = secret_prefix_mac(sha1, key, original_msg)
+
+    # now if we increment a byte in the original message
+    modified_msg = list(original_msg)
+    modified_msg[0] += 1
+    modified_msg = bytes(modified_msg)
+
+    # it should produce a completely different mac using the same secret key
+    modified_mac = secret_prefix_mac(sha1, key, modified_msg)
+    assert original_mac != modified_mac
+
+    print('>> When message is modified:')
+    print('Original MAC: ' + ''.join([f'{b:02x}' for b in original_mac.to_bytes(20, 'big')]))
+    print('Modified MAC: ' + ''.join([f'{b:02x}' for b in modified_mac.to_bytes(20, 'big')]))
+
+    # if we pass in a different secret key, where one byte is incremented
+    new_key = list(key)
+    new_key[0] += 1
+    new_key = bytes(new_key)
+
+    # it should produce a completely different mac using the same message
+    modified_mac = secret_prefix_mac(sha1, key, modified_msg)
+    assert original_mac != modified_mac
+
+    print('>> When secret key is different:')
+    print('Original MAC: ' + ''.join([f'{b:02x}' for b in original_mac.to_bytes(20, 'big')]))
+    print('Modified MAC: ' + ''.join([f'{b:02x}' for b in modified_mac.to_bytes(20, 'big')]))
