@@ -27,7 +27,9 @@ def leftrotate(n: Union[int, bytes], l: bytes) -> Union[int, bytes]:
     return n
 
 
-def sha1(msg: bytes) -> int:
+def sha1(msg: bytes, initial_len: int = 0,
+         a: int = None, b: int = None,
+         c: int = None, d: int = None, e: int = None) -> int:
     """ Implementation of the SHA-1 has function, taking an input and producing
     a 160-bit hash digest.
 
@@ -41,34 +43,44 @@ def sha1(msg: bytes) -> int:
     Note 2: All constants in this pseudo code are in big endian.
             Within each word, the most significant byte is stored in the
             leftmost byte position
+
+    Args:
+        msg (bytes): The message to hash
+        initial_len (int, optional): Length of message already hashed, in
+            bytes. Used when appending to an existing messages, in conjunction
+            with setting the state.
+        a, b, c, d, e (int, optional): 32-bit state integers, used to snap the
+            state to a certain point for appending to an existing message.
     """
-    h0 = 0x67452301
-    h1 = 0xEFCDAB89
-    h2 = 0x98BADCFE
-    h3 = 0x10325476
-    h4 = 0xC3D2E1F0
-
-    ml = len(msg) * 8  # Message length in bits
-
-    msg = list(msg)
+    h0 = a if a is not None else 0x67452301
+    h1 = b if b is not None else 0xEFCDAB89
+    h2 = c if c is not None else 0x98BADCFE
+    h3 = d if d is not None else 0x10325476
+    h4 = e if e is not None else 0xC3D2E1F0
 
     # Pre-processing
     # append the bit '1' to the message
-    msg.append(0x80)
+    # NOTE: This implementation assumes the original message ends neatly on a
+    #       byte boundary (length in bits % 8 == 0)
+    padding = [0x80]
 
     # append 0 <= k < 512 bits '0', such that the resulting message length in
     # bits is congruent to -64 ≡ 448 (mod 512)
-    k = 448 - (len(msg) * 8) % 512
+    k = 448 - ((len(msg) + len(padding)) * 8) % 512
     if k < 0:
         k = 448 + -k
 
-    msg += [0x00] * int(k / 8)
+    padding += [0x00] * int(k / 8)
 
     # append ml, the original message length in bits, as a 64-bit big-endian integer
-    msg += ml.to_bytes(8, 'big')
+    padding += ((len(msg) + initial_len) * 8).to_bytes(8, 'big')
 
-    # the message length should be a multiple of 64 bytes
-    assert len(msg) % 64 == 0
+    # after the padding is appended to the message, its length should be a
+    # multiple of 64 bytes
+    msg = list(msg) + padding
+    if len(msg) % 64 != 0:
+        raise ValueError('Length of message should be evenly divisible by 64 '
+                         f'after padding has been appended {len(msg)}')
 
     # Processing, in 512-bit chunks
     for i in range(0, len(msg), 64):
@@ -79,7 +91,7 @@ def sha1(msg: bytes) -> int:
 
         # Message schedule: extend the sixteen 32-bit words into eighty 32-bit words
         for j in range(16, 80):
-            w = words[i-3] ^ words[i-8] ^ words[i-14] ^ words[i-16]
+            w = words[j-3] ^ words[j-8] ^ words[j-14] ^ words[j-16]
             w = leftrotate(w, 1)
             words.append(w)
 
@@ -142,7 +154,7 @@ def secret_prefix_mac(hash_algo: Callable[[bytes], bytes], key: bytes, msg: byte
 def authenticate_secret_prefix_mac(key: bytes, msg: bytes, mac: bytes) -> bool:
     """Generates a secret-prefix MAC from the passed key and message, and
     compares it to the input MAC.
-    
+
     Returns:
         bool: Represents whether the generated MAC matches the one passed in.
     """
