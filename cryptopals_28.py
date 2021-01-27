@@ -15,10 +15,9 @@ def leftrotate(n: Union[int, bytes], l: bytes) -> Union[int, bytes]:
     if use_bytes:
         n = int.from_bytes(n, 'big')
 
-    for _ in range(0, l):
-        # Get the leading bit, shifted into the trailing position
-        x = ((0b1 << 31) & n) >> 31
-        n = (n << 1) & 0xFFFFFFFF | x
+    # Get the leading bit, shifted into the trailing position
+    n &= 0xFFFFFFFF
+    n = (n << l & 0xFFFFFFFF) | (n >> (32 - l))
 
     # Convert back to bytes if we need to
     if use_bytes:
