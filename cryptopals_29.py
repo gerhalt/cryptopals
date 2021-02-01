@@ -6,33 +6,32 @@ from random import randint
 from typing import Tuple
 
 from cryptopals_28 import secret_prefix_mac, sha1
-from util import bytes_to_str 
 
 
 def digest_padding(msg_len: int) -> bytes:
-    """Calculates the SHA-1 padding of message. As in our original SHA-1
-    implementation, assumes the message is neatly bounded to the nearest
-    byte.
+    """Calculates the SHA1/MD4 padding of message. Assumes the message is
+    neatly bounded to the nearest byte.
 
     Args:
         msg_len (int): Length of the message, in bytes
 
     Returns:
-        (bytes): SHA1 padding for a message of the given length
+        (bytes): MD4 padding for a message of the given length
     """
+    # NOTE: This implementation assumes the original message ends neatly on a
+    #       byte boundary (length in bits % 8 == 0)
     padding = [0x80]
 
-    # Calculate the number of empty bits required to pad to modulo 448 bits,
-    # leaving room for a 64-bit integer at the very end containing the message
-    # length in bits
-    k = 448 - ((msg_len + 1) * 8) % 512
+    # append 0 <= k < 512 bits '0', such that the resulting message length in
+    # bits is congruent to -64 ≡ 448 (mod 512)
+    k = 448 - ((msg_len + len(padding)) * 8) % 512
     if k < 0:
-        k = 448 + -k
+        k = 512 + k
 
-    padding += [0x00] * int(k / 8)
+    padding += [0x00] * int(k // 8)
 
-    # append the message length in bits as a 64-bit big-endian integer
-    padding += (msg_len * 8).to_bytes(8, 'big')
+    # append ml, the original message length in bits, as a 64-bit little-endian integer
+    padding += (msg_len * 8).to_bytes(8, 'little')
 
     return bytes(padding)
 
@@ -56,7 +55,6 @@ if __name__ == '__main__':
     assert break_sha1_mac_into_registers(h) == (3252765203, 1579508993, 1320547169, 1279034732, 2416568672)
 
     # Given a random key of random length, unknown to us
-
     key = os.urandom(randint(8, 16))
 
     # Generate a secret-prefix MAC under a
@@ -84,7 +82,7 @@ if __name__ == '__main__':
         expected_mac = sha1(key + original_msg + glue_padding + forged_suffix).to_bytes(20, 'big')
         if forged_mac == expected_mac:
             print(f'Found secret length length of {key_len}')
-            print(f'Forged MAC is: {bytes_to_str(forged_mac)}')
+            print(f'Forged MAC is: {forged_mac.hex()}')
             break
     else:
         raise Exception("Couldn't guess secret key length") 
