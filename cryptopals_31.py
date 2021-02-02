@@ -2,9 +2,9 @@
 
 import os
 import sys
+import time
 from argparse import ArgumentParser
 from http import HTTPStatus
-from time import sleep, time
 
 import requests
 from flask import Flask, jsonify, request
@@ -51,7 +51,7 @@ def compare(hmac: bytes, signature: bytes) -> bool:
     return hmac == signature
 
 
-def insecure_compare(hmac: bytes, signature: bytes) -> bool:
+def insecure_compare(hmac: bytes, signature: bytes, sleep: float = 0.05) -> bool:
     """Compare the SHA1 HMAC of the contents of a file appended to our server
     secret. Compare each byte one by one, and exit early if a byte doesn't
     match. Lastly, waits 50ms after each byte position is compared.
@@ -63,7 +63,7 @@ def insecure_compare(hmac: bytes, signature: bytes) -> bool:
         if a != b:
             return False
 
-        sleep(0.05)
+        time.sleep(sleep)
 
     return True
 
@@ -81,7 +81,7 @@ def artificial_timing_attack():
         for b in range(0, 0xFF):
             signature[idx] = b
 
-            start = time()
+            start = time.time()
             try:
                 resp = s.get(
                     'http://localhost:9000/test',
@@ -93,7 +93,7 @@ def artificial_timing_attack():
                 sys.stderr.write('Unable to connect to server\n')
                 sys.stderr.flush()
                 sys.exit(1)
-            end = time()
+            end = time.time()
 
             duration = end - start
             print(f'Test of byte {b:02x} took {duration:.2} seconds')
