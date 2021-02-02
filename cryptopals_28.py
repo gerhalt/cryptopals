@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+import struct
 from typing import Callable, Union
 
 from cryptopals_10 import xor
@@ -28,7 +29,7 @@ def leftrotate(n: Union[int, bytes], l: bytes) -> Union[int, bytes]:
 
 def sha1(msg: bytes, initial_len: int = 0,
          a: int = None, b: int = None,
-         c: int = None, d: int = None, e: int = None) -> int:
+         c: int = None, d: int = None, e: int = None) -> bytes:
     """ Implementation of the SHA-1 has function, taking an input and producing
     a 160-bit hash digest.
 
@@ -138,7 +139,7 @@ def sha1(msg: bytes, initial_len: int = 0,
     h4 &= 0xFFFFFFFF
 
     # Produce the final hash value as a 160-bit number
-    return (h0 << 128) | (h1 << 96) | (h2 << 64) | (h3 << 32) | h4
+    return bytes(struct.pack(">5L", h0, h1, h2, h3, h4))
 
 
 def secret_prefix_mac(hash_algo: Callable[[bytes], bytes], key: bytes, msg: bytes) -> bytes:
@@ -171,13 +172,13 @@ if __name__ == '__main__':
 
     # Tests for SHA-1 hash
     h = sha1(b"The quick brown fox jumps over the lazy dog")
-    assert h == 0x2fd4e1c67a2d28fced849ee1bb76e7391b93eb12
+    assert h == 0x2fd4e1c67a2d28fced849ee1bb76e7391b93eb12.to_bytes(20, 'big')
 
     h = sha1(b"The quick brown fox jumps over the lazy cog")
-    assert h == 0xde9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3
+    assert h == 0xde9f2c7fd25e1b3afad3e85a0bd17d9b100db4b3.to_bytes(20, 'big')
 
     h = sha1(b"")
-    assert h == 0xda39a3ee5e6b4b0d3255bfef95601890afd80709
+    assert h == 0xda39a3ee5e6b4b0d3255bfef95601890afd80709.to_bytes(20, 'big')
 
     # Basic verification that tampering with the message results in a
     # completely different MAC
@@ -195,8 +196,8 @@ if __name__ == '__main__':
     assert original_mac != modified_mac
 
     print('>> When message is modified:')
-    print('Original MAC: ' + ''.join([f'{b:02x}' for b in original_mac.to_bytes(20, 'big')]))
-    print('Modified MAC: ' + ''.join([f'{b:02x}' for b in modified_mac.to_bytes(20, 'big')]))
+    print(f'Original MAC: {original_mac.hex()}')
+    print(f'Modified MAC: {modified_mac.hex()}')
 
     # if we pass in a different secret key, where one byte is incremented
     new_key = list(key)
@@ -208,5 +209,5 @@ if __name__ == '__main__':
     assert original_mac != modified_mac
 
     print('>> When secret key is different:')
-    print('Original MAC: ' + ''.join([f'{b:02x}' for b in original_mac.to_bytes(20, 'big')]))
-    print('Modified MAC: ' + ''.join([f'{b:02x}' for b in modified_mac.to_bytes(20, 'big')]))
+    print(f'Original MAC: {original_mac.hex()}')
+    print(f'Modified MAC: {modified_mac.hex()}')

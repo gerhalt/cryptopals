@@ -7,7 +7,7 @@ from random import randint
 from typing import Iterable, Generator, Tuple
 
 from cryptopals_28 import leftrotate
-from cryptopals_29 import digest_padding
+from cryptopals_29 import bytes_to_registers, digest_padding
 
 
 def md4(msg: bytes, initial_len: int = 0,
@@ -27,7 +27,7 @@ def md4(msg: bytes, initial_len: int = 0,
 
     # after the padding is appended to the message, its length should be a
     # multiple of 64 bytes
-    msg = msg + digest_padding(len(msg) + initial_len)
+    msg = msg + digest_padding(len(msg) + initial_len, 'little')
     if len(msg) % 64 != 0:
         raise ValueError('Length of message should be evenly divisible by 64 '
                          f'after padding has been appended, actually is {len(msg)}')
@@ -106,18 +106,6 @@ def md4(msg: bytes, initial_len: int = 0,
     return bytes(struct.pack("<4L", a, b, c, d))
 
 
-def bytes_to_registers(h: bytes) -> Tuple[int, ...]:
-    """Takes a `bytes` object that has a length that is a multiple of 4 bytes
-    and returns a tuple containing the 32-bit component registers, ordered
-    from most to least significant. Processes each 32-bit register from the
-    input bytes as little-endian, for use with MD4.
-    """
-    if len(h) % 4 != 0:
-        raise ValueError(f'Length of bytes must be a multiple of 4, is {len(h) // 4}')
-
-    return tuple([int.from_bytes(h[idx:idx+4], 'little') for idx in range(0, len(h), 4)])
-
-
 if __name__ == '__main__':
     print('Challenge #30 - Break an MD4 keyed MAC using length extension')
 
@@ -138,11 +126,11 @@ if __name__ == '__main__':
     forged_suffix = b";admin=true"
 
     original_mac = md4(key + original_msg)
-    registers = bytes_to_registers(original_mac)
+    registers = bytes_to_registers(original_mac, 'little')
 
     # Guess the key length
     for key_len in range(1, 33):
-        glue_padding = digest_padding(key_len + len(original_msg))
+        glue_padding = digest_padding(key_len + len(original_msg), 'little')
 
         # Calculate the length of the old message, which we know will be a multiple
         # of 512 bits. We'll need to pass this in so the final message length winds
