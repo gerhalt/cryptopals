@@ -2,6 +2,7 @@
 
 import argparse
 import os
+import sys
 import time
 from argparse import ArgumentParser
 from http import HTTPStatus
@@ -38,7 +39,8 @@ def test():
 
     hmac = sha1(SECRET_KEY + f)
     print(f'Expected HMAC is {hmac.hex()}')
-    if insecure_compare(hmac, signature, sleep=0.003):
+
+    if insecure_compare(hmac, signature, sleep=0.005):
         return '', HTTPStatus.NO_CONTENT
     else:
         return jsonify("Signature does not match"), HTTPStatus.INTERNAL_SERVER_ERROR
@@ -50,7 +52,7 @@ def better_timing_attack():
     """
     s = requests.session()
 
-    trials = 10
+    trials = 5
 
     signature = bytearray(20)
     for idx in range(0, len(signature)):
