@@ -5,3 +5,4 @@ name = "pypi"
 
 [packages]
 pycrypto = "==2.6.1"
+flask = "*"
