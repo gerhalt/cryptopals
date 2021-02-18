@@ -38,7 +38,7 @@ if __name__ == '__main__':
         b = randint(0, p)
         B = modpow(g, b, p)
 
-        s1 = modpow(B, a, p)
+        s1 = modpow(A, b, p)
         s2 = modpow(B, a, p)
         assert s1 == s2
 
