@@ -34,7 +34,6 @@ class Echo(object):
         """
         s = modpow(self.A, self.b, self.p)
         k = dh_digest(s)
-
         plaintext = pkcs7_strip(cbc_decrypt(msg, k, iv))
 
         iv = os.urandom(16)
