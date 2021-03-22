@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-
 from hashlib import sha256
 from random import randint
 

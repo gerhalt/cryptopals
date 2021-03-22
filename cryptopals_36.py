@@ -69,6 +69,4 @@ if __name__ == '__main__':
     # Validation
     # C -> S: Send HMAC-SHA256(K, salt)
     # S -> C: Send "OK" if HMAC-SHA256(K, salt) validates
-    print(f'Server K: {server_K}')
-    print(f'Client K: {client_K}')
     assert server_K == client_K, "Server and client K's should match"
