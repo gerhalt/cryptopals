@@ -35,7 +35,7 @@ def modinv(a: int, m: int) -> int:
 class RSA(object):
 
     def __init__(self): 
-        prime_bits = 100
+        prime_bits = 1024
         while True:
             p = number.getPrime(prime_bits)
             q = number.getPrime(prime_bits)
