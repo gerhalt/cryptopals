@@ -1,13 +1,8 @@
 # Cryptopals Solutions
 
-Solutions to challenges from https://cryptopals.com/
+Solutions to challenges from https://cryptopals.com/, written in Python 3.7.
 
-Written in Python 3.7.
+Install and run using `pipenv`:
 
-## Installation
-
-```
-pipenv install --python 3.7
-
-pipenv shell
-```
+    pipenv install --python 3.7
+    pipenv run ./cryptopals_5.py
