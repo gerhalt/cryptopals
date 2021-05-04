@@ -32,6 +32,13 @@ def modinv(a: int, m: int) -> int:
         return x % m
 
 
+def moddiv(a: int, b: int, m: int) -> int:
+    """Divides a over b under modulo m.
+    """
+    a = a % m
+    return (modinv(b, m) * a) % m
+
+
 class RSA(object):
 
     def __init__(self): 
