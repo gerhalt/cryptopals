@@ -13,8 +13,22 @@ class DSA(object):
     H = sha1  # Hash function to use
     L = 2048  # Key length
     N = 224   # Modulus length
+    DEFAULT_P = int("800000000000000089e1855218a0e7dac38136ffafa72eda7"
+                    "859f2171e25e65eac698c1702578b07dc2a1076da241c76c6"
+                    "2d374d8389ea5aeffd3226a0530cc565f3bf6b50929139ebe"
+                    "ac04f48c3c84afb796d61e5a4f9a8fda812ab59494232c7d2"
+                    "b4deb50aa18ee9e132bfa85ac4374d7f9091abc3d015efc87"
+                    "1a584471bb1", 16)
+    DEFAULT_Q = int("f4f47f05794b256174bba6e9b396a7707e563c5b", 16)
+    DEFAULT_G = int("5958c9d3898b224b12672c0b98e06c60df923cb8bc999d119"
+                    "458fef538b8fa4046c8db53039db620c094c9fa077ef389b5"
+                    "322a559946a71903f990f1f7e0e025e2d7f7cf494aff1a047"
+                    "0f5b64c36b625a097f1651fe775323556fe00b3608c887892"
+                    "878480e99041be601a62166ca6894bdd41a7054ec89f756ba"
+                    "9fc95302291", 16)
 
-    def __init__(self, x: int = None, y: int = None):
+    def __init__(self, p: int = None, q: int = None, g: int = None,
+                 x: int = None, y: int = None):
         # q is an N-bit prime
         # p is an L-bit prime such that p-1 is a multiple of q
         # Choose an integer h randomly from {2...p-2}
@@ -22,19 +36,9 @@ class DSA(object):
         # q = h ** ((p - 1) / q) % g
         # If g = 1, try again with a different h, h = 2 is commonly used)
         # For now, hard-coded parameters
-        self.p = int("800000000000000089e1855218a0e7dac38136ffafa72eda7"
-                     "859f2171e25e65eac698c1702578b07dc2a1076da241c76c6"
-                     "2d374d8389ea5aeffd3226a0530cc565f3bf6b50929139ebe"
-                     "ac04f48c3c84afb796d61e5a4f9a8fda812ab59494232c7d2"
-                     "b4deb50aa18ee9e132bfa85ac4374d7f9091abc3d015efc87"
-                     "1a584471bb1", 16)
-        self.q = int("f4f47f05794b256174bba6e9b396a7707e563c5b", 16)
-        self.g = int("5958c9d3898b224b12672c0b98e06c60df923cb8bc999d119"
-                     "458fef538b8fa4046c8db53039db620c094c9fa077ef389b5"
-                     "322a559946a71903f990f1f7e0e025e2d7f7cf494aff1a047"
-                     "0f5b64c36b625a097f1651fe775323556fe00b3608c887892"
-                     "878480e99041be601a62166ca6894bdd41a7054ec89f756ba"
-                     "9fc95302291", 16)
+        self.p = p if p is not None else self.DEFAULT_P
+        self.q = q if q is not None else self.DEFAULT_Q
+        self.g = g if g is not None else self.DEFAULT_G
 
         # Compute the per-user keys
         self.x = x or randint(1, self.q - 1)
