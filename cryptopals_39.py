@@ -41,11 +41,15 @@ def moddiv(a: int, b: int, m: int) -> int:
 
 class RSA(object):
 
-    def __init__(self): 
-        prime_bits = 1024
+    def __init__(self, key_len=1024):
+        """
+        Arguments:
+            key_len (int):
+                Number of bits in each of p and q
+        """
         while True:
-            p = number.getPrime(prime_bits)
-            q = number.getPrime(prime_bits)
+            p = number.getPrime(key_len)
+            q = number.getPrime(key_len)
 
             n = p * q               # our modulo
             et = (p - 1) * (q - 1)  # "totient"
@@ -62,13 +66,13 @@ class RSA(object):
         self.n = n
         self.e = e
         self.d = d
-       
+
     def encrypt(self, plaintext: int) -> int:
         return modpow(plaintext, self.e, self.n)
-    
+
     def decrypt(self, ciphertext: int) -> int:
         return modpow(ciphertext, self.d, self.n)
-    
+
 
 if __name__ == '__main__':
     print('Challenge #39 - Implement RSA')
@@ -94,7 +98,7 @@ if __name__ == '__main__':
     c = rsa.encrypt(int.from_bytes(inp, 'big'))
 
     out = rsa.decrypt(c).to_bytes(len(inp), 'big')
-    assert inp == out 
+    assert inp == out
 
     # NOTE: `n` must be less than the numeric input value for this to work
     inp = rsa.n
