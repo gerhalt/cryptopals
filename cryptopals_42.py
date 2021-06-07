@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-from math import ceil, log
+from math import ceil
 
 from cryptopals_28 import sha1
 from cryptopals_33 import modpow
