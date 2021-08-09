@@ -4,6 +4,7 @@ import string
 import zlib
 from functools import partial
 from random import choice
+from typing import Callable, Optional
 
 from cryptopals_10 import BLOCK_SIZE, cbc_encrypt
 from cryptopals_18 import aes_ctr
@@ -21,7 +22,15 @@ CHARS = bytes((string.ascii_letters + string.digits + '+/=').encode('utf-8'))
 
 
 def oracle(plaintext: bytes, encryption='stream') -> int:
-    assert encryption in {'stream', 'cipher'}
+    """Given a `plaintext`, returns the size of the compressed, encrypted
+    ciphertext in bytes.
+
+    Args:
+        plaintext: the text to encrypt
+        encryption: 'stream' or 'cipher'. Stream uses AES, while 'cbc' uses
+            CBC.
+    """
+    assert encryption in {'stream', 'cbc'}
     
     key = os.urandom(16)
     iv = os.urandom(16)
@@ -32,57 +41,81 @@ def oracle(plaintext: bytes, encryption='stream') -> int:
     if encryption == 'stream':
         nonce = int.from_bytes(iv, byteorder='big')
         ciphertext = aes_ctr(key, nonce, compressed)
-    elif encryption == 'cipher':
+    elif encryption == 'cbc':
         ciphertext = cbc_encrypt(compressed, key, iv)
 
     return len(ciphertext)
 
 
 def request(body: bytes) -> bytes:
+    """Creates a populated request payload as defined in the problem statement.
+
+    Args:
+        body: the body of the request
+
+    Returns:
+        the full payload
+    """
     return bytes(REQUEST_FMT.format(
         session_id=SESSION_ID,
         content_len=len(body),
         body=body.decode('utf-8')).encode('utf-8'))
 
 
-def guess(oracle, known: bytes = None, base_guess: bytes = None, block_align: bool = False) -> bytes:
-    """Recursively determines and returns the session_id= string.
+def guess(oracle: Callable[[bytes], bytes], known: bytes = None,
+          base_guess: bytes = None, block_align: bool = False
+          ) -> Optional[bytes]:
+    """Recursively determines and returns the best guess for the
+    'sessionid=...' string, including that leading portion..
 
     Args:
-    - oracle: oracle function to call, accepting a plaintext string and
-        returning a length in bytes
-    - known: our discovered session_id string, so far
-    - base_guess: used when recursing into a set of guesses, when the best
-        choice isn't immediately apparently
-    - block_align: whether to create a prefix such that adding an incorrect
-        character to the ongoing session_id string will roll over the PKCS7
-        padding to append a full block
+        oracle: oracle function to call, accepting a plaintext string and
+            returning a length in bytes
+        known: our discovered session_id string, so far
+        base_guess: used when recursing into a set of guesses, when the best
+            choice isn't immediately apparent
+        block_align: whether to create a prefix such that adding an incorrect
+            character to the ongoing session_id string will roll over the PKCS7
+            padding to append a full block
+
+    Returns:
+        The best guess given the `known` bytes, or `None` if all guesses
+        appeared equally bad.
     """
-    # Default values
     if base_guess is None:
         base_guess = b''
     if known is None:
         known = b'sessionid='
 
-    last_size = oracle(request(known))
+    # NOTE: This doesn't include the `base_guess`, which is why it's passed in
+    #       separately.
+    known_size = oracle(request(known))
+
+    # The block alignment option allows us to deal with ciphers that use PKCS7
+    #
+    # Add a character to our prefix string. Check the size of our full payload,
+    # including any known and guessed bytes, using the oracle. If the size
+    # hasn't increased, repeat.
+    #
+    # Once the size increases, we strip off *2* bytes, not 1. This allows a
+    # guess to increase the length by a single byte without being
+    # disqualified. This ALSO has the side effect that nested function calls
+    # will not actually change the prefix, because b'XX'[:-2] (or shorter)
+    # becomes b''.
     prefix = b''
     if block_align:
-        # Build a prefix such that adding another byte (that doesn't compress down)
-        # to the payload makes it block-aligned and the PKCS7 padding adds a full
-        # block of new padding to the end of the compressed request
         while True:
             prefix += choice(CHARS).to_bytes(1, byteorder='big')
             size = cbc_oracle(request(prefix + known + base_guess))
 
-            if size - last_size == BLOCK_SIZE:
-                prefix = prefix[:-2]  # Back up two bytes
+            if size - known_size == BLOCK_SIZE:
+                prefix = prefix[:-2]
                 break
 
-            last_size = size
-
+    # Prepend the prefix (it'll be stripped off before returning)
     known = prefix + known
 
-    best_size = 2 ** 16
+    best_guess_size = None
     guesses = []
     for i in CHARS:
         i = i.to_bytes(1, byteorder='big')
@@ -90,37 +123,39 @@ def guess(oracle, known: bytes = None, base_guess: bytes = None, block_align: bo
         size = oracle(r)
 
         g = base_guess + i
-        if size < best_size:
-            best_size = size
+        if not best_guess_size or size < best_guess_size:
+            best_guess_size = size
             guesses = [g]
-        elif size == best_size:
+        elif size == best_guess_size:
             guesses.append(g)
 
-    # If our best size is greater than the last size, we haven't extended our
-    # session ID so we can return early
-    if best_size > last_size + 1:
+    # If the ciphertext size of our best guess is 2 or more bytes greater than
+    # the size of our known payload, stop guessing and immediately return.
+    if best_guess_size >= known_size + 2:
         return
     
-    guesses = sorted(guesses)
+    # If we have many guesses, all of which result in the same payload size,
+    # try all of them, pre
+    guesses = sorted(guesses)  # For alphabetic debugging :)
     if len(guesses) > 1:
         for g in guesses:
-            guess_result = guess(oracle, known, g, block_align=block_align)
+            guess_result = guess(oracle, known, base_guess=g, block_align=block_align)
             if guess_result is not None:
                 break
     else:
         g = guesses.pop()
         guess_result = guess(oracle, known + g, block_align=block_align)
 
-        # If no deeper match was returned, be sure to append the current best
-        # option to the result before returning
+        # No deeper match found, append this call's best guess character
         if not guess_result:
             known += g 
 
-    # Finally, strip off any prefix we added for padding
+    # Strip off any padding prefix
     if guess_result:
         guess_result = guess_result[len(prefix):]
 
-    # If none of our guesses resulted in any better size, return what we knew
+    # Return the result of our nested guess call(s), or what was already known
+    # if the guesses weren't fruitful
     return guess_result or known
 
 
@@ -128,10 +163,10 @@ if __name__ == '__main__':
     print('Challenge #51 - Compression Ratio Side-Channel Attacks')
 
     # A. Stream cipher
-    guessed_session_id = guess(oracle)[10:]  # Strip off leading 'sessionid='
-    assert SESSION_ID == guessed_session_id.decode('utf-8')
+    guessed_session_id = guess(oracle)
+    assert f'sessionid={SESSION_ID}' == guessed_session_id.decode('utf-8')
 
     # B. CBC
-    cbc_oracle = partial(oracle, encryption='cipher')
-    guessed_session_id = guess(cbc_oracle, block_align=True)[10:]  # Strip off leading sessionid=
-    assert SESSION_ID == guessed_session_id.decode('utf-8')
+    cbc_oracle = partial(oracle, encryption='cbc')
+    guessed_session_id = guess(cbc_oracle, block_align=True)
+    assert f'sessionid={SESSION_ID}' == guessed_session_id.decode('utf-8')
