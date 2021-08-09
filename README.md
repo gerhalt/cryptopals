@@ -1,8 +1,8 @@
 # Cryptopals Solutions
 
-<img align="right" src="splash2.jpg">
+<img align="right" src="splash.jpg">
 
-Solutions to challenges from https://cryptopals.com/, written in Python 3.7.
+Solutions to challenges from https://cryptopals.com/ written in Python 3.
 
 Install and run using `pipenv`:
 
