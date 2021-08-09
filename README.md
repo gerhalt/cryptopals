@@ -1,6 +1,6 @@
 # Cryptopals Solutions
 
-![Locked Door](splash.jpg "Locked Door")
+![Locked Door](splash2.jpg "Locked Door")
 
 Solutions to challenges from https://cryptopals.com/, written in Python 3.7.
 
