@@ -168,5 +168,10 @@ if __name__ == '__main__':
 
     # B. CBC
     cbc_oracle = partial(oracle, encryption='cbc')
-    guessed_session_id = guess(cbc_oracle, block_align=True)
-    assert f'sessionid={SESSION_ID}' == guessed_session_id.decode('utf-8')
+    while True:
+        SESSION_ID = ''.join(map(chr, [choice(CHARS) for _ in range(0, 32)]))
+        print(SESSION_ID)
+
+        guessed_session_id = guess(cbc_oracle, block_align=True)
+        print(guessed_session_id.decode())
+        assert f'sessionid={SESSION_ID}' == guessed_session_id.decode('utf-8')
