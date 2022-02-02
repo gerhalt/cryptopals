@@ -36,7 +36,8 @@ def cipher(key: bytes, msg: bytes, output_size: int = 2) -> bytes:
     return cipher.encrypt(msg)[:output_size]
 
 
-def merkle_damgard(msg: bytes, h: bytes, c: Callable[[bytes, bytes], bytes]) -> bytes:
+def merkle_damgard(msg: bytes, h: bytes, c: Callable[[bytes, bytes], bytes],
+                   pad_msg: bool = True) -> bytes:
     """Iterative hash function construction. Given some initial state H, feeds
     that into the cipher to produce some output, which is padded and used as
     the input state for the next block. Returns the final H when the end of the
@@ -46,13 +47,16 @@ def merkle_damgard(msg: bytes, h: bytes, c: Callable[[bytes, bytes], bytes]) -> 
         msg
         h: initial state
         c: cipher
+        pad_msg: should the message be padded
     """
-    padded_msg = pkcs7_pad(msg)
-    for i in range(0, len(padded_msg), 16):
+    if pad_msg:
+        msg = pkcs7_pad(msg)
+
+    for i in range(0, len(msg), 16):
         # H (probably) is not block-length, so pad it
         padded_h = pkcs7_pad(h)
 
-        block = padded_msg[i:i+16]
+        block = msg[i:i+16]
         h = c(padded_h, block)
 
     return h
@@ -93,7 +97,7 @@ def generate_many_collisions(n: int, c: Callable[[bytes, bytes], bytes]) -> List
     # example, if we have A,B -> H1 as our first colliding blocks, and
     # C,D -> H2 as our second colliding blocks, we would create a set of four
     # messages: [AC, AD, BC, BD]
-    collisions = set(hashes[blocks[0]][:2]) 
+    collisions = set(hashes[blocks[0]][:2])
     for h in blocks[1:-1]:
         new_collisions = set()
         for c in collisions:
@@ -119,7 +123,7 @@ if __name__ == '__main__':
 
         collisions = generate_many_collisions(16, cheap_cipher)
         print(f'Generated {len(collisions)} cheap collisions')
-        
+
         # Check whether any of the cheap hash collisions also collide in the
         # expensive hash
 
